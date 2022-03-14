@@ -5,6 +5,6 @@ end
 
 
 # model name:Article
-# article model file name:article.rb
 # article model class name:Article
+# article model file name:article.rb
 # table name: articles
