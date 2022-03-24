@@ -1,12 +1,14 @@
 class ArticlesController < ApplicationController
-  before_action :set_article, only:[:show,:edit,:update,:destroy]
-  before_action :require_user, except:[:show,:index]
-  before_action :require_same_user,only: [:edit,:update,:destroy]
+  before_action :set_article, only:[:update]
+  # before_action :require_user, except:[:show,:index]
+  # before_action :require_same_user,only: [:edit,:update,:destroy]
   def show
+    render :json => @article
   end
 
   def index
     @articles= Article.paginate(page: params[:page], per_page: 4)
+    render :json => @articles
   end
 
   def new
@@ -14,44 +16,52 @@ class ArticlesController < ApplicationController
   end
 
   def edit
+    render :json => @article
   end
 
   def create
-    # just to render what user entered the article
-    # render plain: params[:article]
-    # to save to the database
+    byebug
     @article = Article.new(article_params)
-    @article.user=current_user
     if @article.save
+      render :json => @article
       flash[:notice]="Article was created sucessfully!"
-      redirect_to @article 
     else
-      render 'new'
+      render :json => {status:"couldnt be created"}
     end
   end
-
+ 
   def update
+    byebug
    if  @article.update(article_params)
-    flash[:notice]="Article was updated successfully"
-    redirect_to @article
+    render :json => @article
    else
-    render 'edit'
+    render :json => {status: "Couldnt be updated"}
    end
   end
 
   def destroy
-    byebug
-    @article.destroy
-    redirect_to articles_path
+    # byebug
+    if @article.destroy
+    # redirect_to articles_path
+      render :json => {status:"Deleted"}
+    else
+      render :json => {status:"Not Deleted"}
+    end
   end
 
   private
+
   def set_article
-    @article=Article.find(params[:id]) 
+    @article=Article.find_by(id: params[:id])
+    if @article.present?
+      # render :json => {status:"User deleted"}
+    else
+      render :json => {status:"no Article against this id"}
+    end
   end
 
   def article_params
-    params.require(:article).permit(:title, :description)
+    params.permit(:title, :description,:user_id)
   end
 
   def require_same_user

@@ -1,5 +1,7 @@
 class CategoriesController < ApplicationController
-  before_action :require_admin,except: [:index,:show]
+  before_action :set_category,only: [:show,:update,:destroy]
+
+  # before_action :require_admin,except: [:index,:show]
 
   def new
     @category=Category.new
@@ -8,25 +10,51 @@ class CategoriesController < ApplicationController
   def create
     @category=Category.new(category_params)
     if @category.save
-      flash[:notice]="Category was successfully created"
-      redirect_to @category
+      render :json => @category
     else
-      render 'new'
+      render :json => {status:"false"}
+    end
+  end
+
+  def update
+    if @category && @category.update(category_params)
+      render :json => @category
+      flash[:notice]="Your account information was successfully updated"
+    else
+      render :json => {status:"false"}
+    end
+  end
+
+  def destroy
+    if @category.destroy
+    render :json => {status:"Deleted"}
+    else
+    render :json => {status:"Not Deleted"}
     end
   end
   
   def show
-    @category=Category.find(params[:id])
+    render :json => @category
   end
  
   def index
-    @categories=Category.paginate(page: params[:page], per_page: 4)
+    @categories=Category.all
+    render :json => @categories
   end
 
   private
 
+  def set_category
+    @category=Category.find_by(id: params[:id])
+    if @category.present?
+ 
+    else
+      render :json => {status:"No category found against this id"}
+    end
+  end
+
   def category_params
-    params.require(:category).permit(:name)
+    params.permit(:name)
   end
 
  def require_admin

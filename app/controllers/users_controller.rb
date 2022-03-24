@@ -1,14 +1,17 @@
 class UsersController <ApplicationController
   before_action :set_user,only: [:show,:edit,:update,:destroy]
-  before_action :require_user, only: [:edit,:update]
-  before_action :require_same_user,only: [:edit,:update,:destroy]
+  # before_action :require_user, only: [:edit,:update]
+  # before_action :require_same_user,only: [:edit,:update,:destroy]
+  skip_before_action :verify_authenticity_token
 
   def show
-    @articles=@user.articles.paginate(page: params[:page], per_page: 4)
+    @articles=@user.articles
+    render :json => {:user=> @user,:article=>@articles}
   end
 
   def index
-    @users= User.paginate(page: params[:page], per_page: 4)
+    @users= User.all
+    render :json => @users
   end
 
   def new
@@ -16,48 +19,67 @@ class UsersController <ApplicationController
   end
 
   def create
-    @user=User.new(user_params)
+    @user=User.new(user_params(params))
     if @user.save
       session[:user_id]=@user.id
+      render :json => @user
       flash[:notice]="Welcome to the Alpha Blog ,#{@user.username}, you have signed up!"
-      redirect_to articles_path
+      # redirect_to articles_path
     else
-      render 'new'
+      # render 'new'
+      render :json => {status:"error"}
     end
   end
 
   def destroy
-    @user.destroy
-    session[:user_id] = nil if @user==current_user
+    if @user.destroy
+    # session[:user_id] = nil if @user==current_user
+    render :json => {status:"Deleted"}
     flash[:notice] = "Account and all associated articles successfully deleted"
-    redirect_to articles_path
-  end
 
-  def edit
-  end
-
-  def update
-    if @user.update(user_params)
-      flash[:notice]="Your account information was successfully updated"
-      redirect_to @user
+    # redirect_to articles_path
     else
-      render 'edit'
+    render :json => {status:"Not Deleted"}
     end
   end
 
+  def edit
+    render :json => @user
+  end
+
+  def update
+    # byebug
+    if @user.update(user_params(params))
+      render :json => @user
+      flash[:notice]="Your account information was successfully updated"
+      # redirect_to @user
+    else
+      # render 'edit'
+      render :json => {status:"false"}
+    end
+  end
+
+
   private
-  def user_params
-    params.require(:user).permit(:username, :email, :password)
+
+  def user_params(params)
+    params.permit(:username, :email, :password)
   end
 
   def set_user
-    @user=User.find(params[:id])
+    @user=User.find_by(id: params[:id])
+    if @user.present?
+      # render :json => {status:"User deleted"}
+    else
+      render :json => {status:"User dont found having this id"}
+    end
   end
   
   def require_same_user
     if current_user!=@user && !current_user.admin?
       flash[:alert]="You can only edit or delete your own account"
-      redirect_to @user
+      # redirect_to @user
+      render :json => {status: "not the admin/current user"}
     end
   end
 
